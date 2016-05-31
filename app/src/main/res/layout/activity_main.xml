@@ -1,57 +1,96 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:orientation="vertical"
     android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    android:paddingBottom="@dimen/activity_vertical_margin" tools:context=".MainActivity">
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    tools:context="com.noinventory.noinventory.Principal">
 
-    <Button
-        android:id="@+id/btn_0"
-        android:layout_width="wrap_content"
+    <TextView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minWidth="@dimen/buttondrive_btn_min_width"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:text="0"
-        />
+        android:id="@+id/evento"
+        android:text="Eventos"/>
 
-    <Button
-        android:id="@+id/btn_90"
-        android:layout_width="wrap_content"
+
+    <TextView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minWidth="@dimen/buttondrive_btn_min_width"
-        android:layout_alignParentRight="true"
-        android:layout_centerVertical="true"
-        android:text="90"
-        />
+        android:id="@+id/acelerometro"
+        android:text="Acelerometro"/>
 
-    <Button
-        android:id="@+id/btn_180"
-        android:layout_width="wrap_content"
+    <TextView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minWidth="@dimen/buttondrive_btn_min_width"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:text="180"
-        />
+        android:id="@+id/altitud"
+        android:text="Altittude"/>
 
-    <Button
-        android:id="@+id/btn_270"
-        android:layout_width="wrap_content"
+    <TextView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minWidth="@dimen/buttondrive_btn_min_width"
-        android:layout_alignParentLeft="true"
-        android:layout_centerVertical="true"
-        android:text="270"
-        />
+        android:id="@+id/orientacion"
+        android:text="Orientacion"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/back"
+        android:text="BACKEMF"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/giro"
+        android:text="Giroscopio"/>
+
+
 
     <Button
-        android:id="@+id/btn_stop"
+        android:id="@+id/procedimiento1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:minWidth="@dimen/buttondrive_btn_min_width"
         android:layout_centerInParent="true"
-        android:text="STOP"
+        android:text="Procedimiento - 1"
         />
 
-</RelativeLayout>
+    <Button
+        android:id="@+id/procedimiento2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="@dimen/buttondrive_btn_min_width"
+        android:layout_centerInParent="true"
+        android:text="Procedimiento - 2"
+        />
+
+    <Button
+        android:id="@+id/procedimiento3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="@dimen/buttondrive_btn_min_width"
+        android:layout_centerInParent="true"
+        android:text="Procedimiento - 3"
+        />
+    <Button
+        android:id="@+id/procedimiento4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="@dimen/buttondrive_btn_min_width"
+        android:layout_centerInParent="true"
+        android:text="Procedimiento - 4"
+        />
+
+    <Button
+        android:id="@+id/detener"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="@dimen/buttondrive_btn_min_width"
+        android:layout_centerInParent="true"
+        android:text="Detener"
+        />
+
+
+</LinearLayout>
+
