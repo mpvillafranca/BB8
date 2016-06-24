@@ -1,96 +1,80 @@
-
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
-    android:orientation="vertical"
-    android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="fill_parent"
+    android:id="@+id/entire_view"
+    android:layout_height="fill_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    tools:context="com.noinventory.noinventory.Principal">
+    android:paddingBottom="@dimen/activity_vertical_margin" tools:context=".MainActivity">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/evento"
-        android:text="Eventos"/>
-
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/acelerometro"
-        android:text="Acelerometro"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/altitud"
-        android:text="Altittude"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/orientacion"
-        android:text="Orientacion"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/back"
-        android:text="BACKEMF"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/giro"
-        android:text="Giroscopio"/>
-
-
-
-    <Button
-        android:id="@+id/procedimiento1"
+    <!-- Events -->
+    <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="@dimen/buttondrive_btn_min_width"
-        android:layout_centerInParent="true"
-        android:text="Procedimiento - 1"
+        android:layout_height="fill_parent"
+        android:orientation="vertical"
+        android:weightSum="1">
+
+        <TextView
+            android:id="@+id/events"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/score"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <FrameLayout
+            android:id="@+id/fragment_root"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.03" />
+
+    </LinearLayout>
+
+    <!-- The joystick view for the application -->
+    <com.orbotix.joystick.api.JoystickView
+        android:id="@+id/joystickView"
+        android:visibility="visible"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        app:puck_radius="60dp"
+        app:edge_overlap="10dp"
+        app:alpha="0.9"
+        android:clickable="false"
+        android:focusableInTouchMode="false"
+        android:focusable="false"
         />
 
-    <Button
-        android:id="@+id/procedimiento2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="@dimen/buttondrive_btn_min_width"
-        android:layout_centerInParent="true"
-        android:text="Procedimiento - 2"
+    <com.orbotix.calibration.api.CalibrationImageButtonView
+        android:id="@+id/calibrateButton"
+        android:visibility="visible"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:background="#00000000"
+        android:scaleType="centerInside"
+        android:layout_marginBottom="10dp"
+        app:widget_orientation="above"
+        app:foreground_color="#FFFFFFFF"
+        app:background_color="#FF1990FF"
+        app:calibration_circle_radius="50dp"
+        app:calibration_center_x = "30dp"
+        app:calibration_center_y = "-30dp"/>
+
+
+    <!-- This needs to be the last element in your xml page if you want two finger calibration to work
+     anywhere in your application's page -->
+    <com.orbotix.calibration.api.CalibrationView
+        android:id="@+id/calibrationView"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        app:twoFingerEnabled="true"
         />
 
-    <Button
-        android:id="@+id/procedimiento3"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="@dimen/buttondrive_btn_min_width"
-        android:layout_centerInParent="true"
-        android:text="Procedimiento - 3"
-        />
-    <Button
-        android:id="@+id/procedimiento4"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="@dimen/buttondrive_btn_min_width"
-        android:layout_centerInParent="true"
-        android:text="Procedimiento - 4"
-        />
+    <!-- In this case, we want fragments to display over the calibration view -->
 
-    <Button
-        android:id="@+id/detener"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="@dimen/buttondrive_btn_min_width"
-        android:layout_centerInParent="true"
-        android:text="Detener"
-        />
-
-
-</LinearLayout>
-
+</RelativeLayout>
