@@ -1,6 +1,7 @@
 package com.example.mpv.bb8;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -57,7 +58,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Robo
 
     private long startGameTime;
     private long endGameTime;
-
 
 
     private int life;

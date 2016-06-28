@@ -3,4 +3,7 @@
 
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="bluetooth_is_currently_switched_off">Bluetooth: OFF</string>
+    <string name="location_is_currently_switched_off">Location: OFF</string>
+    <string name="bluetooth_not_found">BlueTooth adapter not found, you can\'t use this app</string>
 </resources>
