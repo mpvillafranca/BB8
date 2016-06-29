@@ -6,4 +6,7 @@
     <string name="bluetooth_is_currently_switched_off">Bluetooth: OFF</string>
     <string name="location_is_currently_switched_off">Location: OFF</string>
     <string name="bluetooth_not_found">BlueTooth adapter not found, you can\'t use this app</string>
+    <string name="game_over">GAME OVER</string>
+    <string name="score">Score:</string>
+    <string name="menu">Menu</string>
 </resources>

@@ -2,9 +2,12 @@ package com.example.mpv.bb8;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -31,7 +34,7 @@ import com.orbotix.le.RobotRadioDescriptor;
 
 import java.util.List;
 
-public class MainActivity extends Activity implements View.OnClickListener, RobotChangedStateListener, ResponseListener {
+public class MainActivity extends Activity {
 
     private Handler mHandler = new Handler();
 
@@ -69,17 +72,12 @@ public class MainActivity extends Activity implements View.OnClickListener, Robo
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         life = 100;
-        DiscoveryAgentLE.getInstance().addRobotStateListener( this );
 
         events = (TextView) findViewById(R.id.events);
         events = (TextView) findViewById(R.id.score);
         events.setText(Integer.toString(life));
 
-        if( Build.VERSION.SDK_INT >= 23){
-            // Bluetooth permissions
-        }
-
-        startDiscovery();
+        Game();
     }
 
     /**
@@ -88,25 +86,15 @@ public class MainActivity extends Activity implements View.OnClickListener, Robo
     @Override
     protected void onPause() {
         super.onPause();
-        if (_discoveryAgent != null) {
-            // When pausing, you want to make sure that you let go of the connection to the robot so that it may be
-            // accessed from within other applications. Before you do that, it is a good idea to unregister for the robot
-            // state change events so that you don't get the disconnection event while the application is closed.
-            // This is accomplished by using DiscoveryAgent#removeRobotStateListener().
-            _discoveryAgent.removeRobotStateListener(this);
 
-            // Here we are only handling disconnecting robots if the user selected a type of robot to connect to. If you
-            // didn't use the robot picker, you will need to check the appropriate discovery agent manually by using
-            // DiscoveryAgent.getInstance().getConnectedRobots()
-            for (Robot r : _discoveryAgent.getConnectedRobots()) {
-                // There are a couple ways to disconnect a robot: sleep and disconnect. Sleep will disconnect the robot
-                // in addition to putting it into standby mode. If you choose to just disconnect the robot, it will
-                // use more power than if it were in standby mode. In the case of Ollie, the main LED light will also
-                // turn a bright purple, indicating that it is on but disconnected. Unless you have a specific reason
-                // to leave a robot on but disconnected, you should use Robot#sleep()
-                r.sleep();
-            }
-        }
+        BB8ConnectionActivity.getRobot().sleep();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        checkIfGameOver();
     }
 
     /**
@@ -139,8 +127,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Robo
                 // Here you can use the joystick input to drive the connected robot. You can easily do this with the
                 // ConvenienceRobot#drive() method
                 // Note that the arguments do flip here from the order of parameters
-                if(_robot != null)
-                    _robot.drive((float) angle, (float) distanceFromCenter);
+                if(BB8ConnectionActivity.getRobot() != null)
+                    BB8ConnectionActivity.getRobot().drive((float) angle, (float) distanceFromCenter);
             }
 
             /**
@@ -149,8 +137,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Robo
             @Override
             public void onJoystickEnded() {
                 // Here you can do something when the user stops touching the joystick. For example, we'll make it stop driving.
-                if(_robot != null)
-                    _robot.stop();
+                if(BB8ConnectionActivity.getRobot() != null)
+                    BB8ConnectionActivity.getRobot().stop();
             }
         });
     }
@@ -172,9 +160,9 @@ public class MainActivity extends Activity implements View.OnClickListener, Robo
             @Override
             public void onCalibrationBegan() {
                 // The easy way to set up the robot for calibration is to use ConvenienceRobot#calibrating(true)
-                if(_robot != null){
+                if(BB8ConnectionActivity.getRobot() != null){
                     Log.v(TAG, "Calibration began!");
-                    _robot.calibrating(true);
+                    BB8ConnectionActivity.getRobot().calibrating(true);
                 }
             }
 
@@ -186,8 +174,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Robo
             public void onCalibrationChanged(float angle) {
                 // The usual thing to do when calibration happens is to send a roll command with this new angle, a speed of 0
                 // and the calibrate flag set.
-                if(_robot != null)
-                    _robot.rotate(angle);
+                if(BB8ConnectionActivity.getRobot() != null)
+                    BB8ConnectionActivity.getRobot().rotate(angle);
             }
 
             /**
@@ -197,9 +185,9 @@ public class MainActivity extends Activity implements View.OnClickListener, Robo
             public void onCalibrationEnded() {
                 // This is where the calibration process is "committed". Here you want to tell the robot to stop as well as
                 // stop the calibration process.
-                if(_robot != null) {
-                    _robot.stop();
-                    _robot.calibrating(false);
+                if(BB8ConnectionActivity.getRobot() != null) {
+                    BB8ConnectionActivity.getRobot().stop();
+                    BB8ConnectionActivity.getRobot().calibrating(false);
                 }
             }
         });
@@ -213,282 +201,86 @@ public class MainActivity extends Activity implements View.OnClickListener, Robo
         _calibrationButtonView.setEnabled(false);
     }
 
-    private DiscoveryAgentEventListener _discoveryAgentEventListener = new DiscoveryAgentEventListener() {
-        @Override
-        public void handleRobotsAvailable(List<Robot> robots) {
-            Log.i("Sphero", "Found " + robots.size() + " robots");
 
-            for (Robot robot : robots) {
-                Log.i("Sphero", "  " + robot.getName());
+    private void Game(){
+        setupJoystick();
+        setupCalibration();
+
+        // Here, you need to route all the touch events to the joystick and calibration view so that they know about
+        // them. To do this, you need a way to reference the view (in this case, the id "entire_view") and attach
+        // an onTouchListener which in this case is declared anonymously and invokes the
+        // Controller#interpretMotionEvent() method on the joystick and the calibration view.
+        findViewById(R.id.entire_view).setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                _joystick.interpretMotionEvent(event);
+                _calibrationView.interpretMotionEvent(event);
+                return true;
             }
-        }
+        });
 
-    };
+        // Don't forget to turn on UI elements
+        _joystick.setEnabled(true);
+        _calibrationView.setEnabled(true);
+        _calibrationButtonView.setEnabled(true);
 
-    private RobotChangedStateListener _robotStateListener = new RobotChangedStateListener() {
-        @Override
-        public void handleRobotChangedState(Robot robot, RobotChangedStateNotificationType robotChangedStateNotificationType) {
-            switch (robotChangedStateNotificationType) {
-                case Online:
-                    Toast.makeText(getApplicationContext(), robot.getName() + " is now Online!", Toast.LENGTH_SHORT).show();
+        startGameTime = System.currentTimeMillis();
 
-                    stopDiscovery();
+        BB8ConnectionActivity.getRobot().addResponseListener(new ResponseListener() {
+            @Override
+            public void handleResponse(DeviceResponse deviceResponse, Robot robot) {
 
-                    setupJoystick();
-                    setupCalibration();
+            }
 
-                    // Here, you need to route all the touch events to the joystick and calibration view so that they know about
-                    // them. To do this, you need a way to reference the view (in this case, the id "entire_view") and attach
-                    // an onTouchListener which in this case is declared anonymously and invokes the
-                    // Controller#interpretMotionEvent() method on the joystick and the calibration view.
-                    findViewById(R.id.entire_view).setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public void handleStringResponse(String s, Robot robot) {
+
+            }
+
+            @Override
+            public void handleAsyncMessage(AsyncMessage asyncMessage, Robot robot) {
+                if (asyncMessage == null)
+                    return;
+
+                //Check the asyncMessage type to see if it is a DeviceSensor message
+                if (asyncMessage instanceof CollisionDetectedAsyncData) {
+                    new Thread(new Runnable() {
                         @Override
-                        public boolean onTouch(View v, MotionEvent event) {
-                            _joystick.interpretMotionEvent(event);
-                            _calibrationView.interpretMotionEvent(event);
-                            return true;
-                        }
-                    });
-
-                    // Don't forget to turn on UI elements
-                    _joystick.setEnabled(true);
-                    _calibrationView.setEnabled(true);
-                    _calibrationButtonView.setEnabled(true);
-
-                    Log.i("Sphero", "Robot " + robot.getName() + " Online!");
-                    _robot = new Sphero(robot);
-
-                    startGameTime = System.currentTimeMillis();
-
-
-                            // Finally for visual feedback let's turn the robot green saying that it's been connected
-                    _robot.setLed(0f, 1f, 0f);
-
-                    _robot.enableCollisions(true); // Enabling the collisions detector
-                    _robot.addResponseListener(new ResponseListener() {
-                        @Override
-                        public void handleResponse(DeviceResponse deviceResponse, Robot robot) {
-
-                        }
-
-                        @Override
-                        public void handleStringResponse(String s, Robot robot) {
-
-                        }
-
-                        @Override
-                        public void handleAsyncMessage(AsyncMessage asyncMessage, Robot robot) {
-                            if( asyncMessage == null )
-                                return;
-
-                            //Check the asyncMessage type to see if it is a DeviceSensor message
-                            if( asyncMessage instanceof CollisionDetectedAsyncData) {
-                                //Toast.makeText(getApplicationContext(),"Colision detectadaaaaa",Toast.LENGTH_LONG).show();
-                                new Thread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        _robot.setLed(1f, 0f, 0f);
-                                        try {
-                                            Thread.sleep(1000);
-                                        } catch (InterruptedException e) {
-                                            e.printStackTrace();
-                                        }
-                                        _robot.setLed(0f, 1f, 0f);
-                                    }
-                                }
-                                ).start();
-                                final CollisionDetectedAsyncData collisionData = (CollisionDetectedAsyncData) asyncMessage;
-                                float collisionSpeed =((CollisionDetectedAsyncData) asyncMessage).getImpactSpeed();
-                               // Toast.makeText(getApplicationContext(),Float.toString(collisionSpeed),Toast.LENGTH_SHORT).show();
-                                float c= (collisionSpeed * 10);
-                                //Toast.makeText(getApplicationContext(),Float.toString(c),Toast.LENGTH_SHORT).show();
-                                //Toast.makeText(getApplicationContext(),Integer.toString(Math.round(c)),Toast.LENGTH_SHORT).show();
-                                life=life-Math.round(c);
-                                if(life<0)
-                                    life=0;
-                                Toast.makeText(getApplicationContext(),Integer.toString(life),Toast.LENGTH_SHORT).show();
-                                events.setText(Integer.toString(life));
-                                if(life==0) {
-                                    Toast.makeText(getApplicationContext(), "YOUUU ARE DEADDDDDD", Toast.LENGTH_SHORT).show();
-                                    endGameTime = System.currentTimeMillis() - startGameTime;
-                                    int sec=(int)(endGameTime/1000);
-                                    Toast.makeText(getApplicationContext(),"Tiempo: "+ Integer.toString(sec), Toast.LENGTH_SHORT).show();
-                                    //score.setText(Integer.toString(sec));
-                                }
-
-
-                                // eventos.setText(((CollisionDetectedAsyncData) asyncMessage).getImpactPower().toString());
-                                //events.setText(asyncMessage.toString());
+                        public void run() {
+                            BB8ConnectionActivity.getRobot().setLed(1f, 0f, 0f);
+                            try {
+                                Thread.sleep(1000);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
                             }
+                            BB8ConnectionActivity.getRobot().setLed(0f, 1f, 0f);
                         }
-                    });
-                    break;
-                case Offline:
-                    break;
-                case Connecting:
-                    Toast.makeText(getApplicationContext(), "Connecting to " + robot.getName(), Toast.LENGTH_SHORT).show();
-                    break;
-                case Connected:
-                    Toast.makeText(getApplicationContext(), "Connected to " + robot.getName(), Toast.LENGTH_SHORT).show();
-                    break;
-                // Handle other cases
-                case Disconnected:
-                    // When a robot disconnects, it is a good idea to disable UI elements that send commands so that you
-                    // do not have to handle the user continuing to use them while the robot is not connected
-                    _joystick.setEnabled(false);
-                    _calibrationView.setEnabled(false);
-                    _calibrationButtonView.setEnabled(false);
-                    break;
-                case FailedConnect:
-                    break;
+                    }
+                    ).start();
+                    final CollisionDetectedAsyncData collisionData = (CollisionDetectedAsyncData) asyncMessage;
+                    float collisionSpeed = ((CollisionDetectedAsyncData) asyncMessage).getImpactSpeed();
+                    float c = (collisionSpeed * 10);
+
+                    life = life - Math.round(c);
+                    if (life < 0)
+                        life = 0;
+                    events.setText(String.valueOf(life));
+
+                    checkIfGameOver();
+                }
             }
-        }
-    };
+        });
+    }
 
-    private void startDiscovery() {
-        try {
-            _discoveryAgent = DiscoveryAgentLE.getInstance();
+    private void checkIfGameOver(){
+        if(life == 0){
+            endGameTime = System.currentTimeMillis() - startGameTime;
+            int sec = (int) (endGameTime / 1000);
 
-            // You first need to set up so that the discovery agent will notify you when it finds robots.
-            // To do this, you need to implement the DiscoveryAgentEventListener interface (or declare
-            // it anonymously) and then register it on the discovery agent with DiscoveryAgent#addDiscoveryListener()
-            _discoveryAgent.addDiscoveryListener(_discoveryAgentEventListener);
-
-            // Second, you need to make sure that you are notified when a robot changes state. To do this,
-            // implement RobotChangedStateListener (or declare it anonymously) and use
-            // DiscoveryAgent#addRobotStateListener()
-            _discoveryAgent.addRobotStateListener(_robotStateListener);
-
-            // Creating a new radio descriptor to be able to connect to the BB8 robots
-            RobotRadioDescriptor robotRadioDescriptor = new RobotRadioDescriptor();
-            robotRadioDescriptor.setNamePrefixes(new String[]{"BB-"});
-            _discoveryAgent.setRadioDescriptor(robotRadioDescriptor);
-
-            // Then to start looking for a BB8, you use DiscoveryAgent#startDiscovery()
-            // You do need to handle the discovery exception. This can occur in cases where the user has
-            // Bluetooth off, or when the discovery cannot be started for some other reason.
-            _discoveryAgent.startDiscovery(this);
-        } catch (DiscoveryException e) {
-            Log.e("Sphero", "Discovery Error: " + e);
-            e.printStackTrace();
+            Intent gameOverIntent = new Intent(MainActivity.this, GameOverActivity.class);
+            gameOverIntent.putExtra("score", sec);
+            startActivity(gameOverIntent);
         }
     }
 
-    private void stopDiscovery() {
-        // When a robot is connected, this is a good time to stop discovery. Discovery takes a lot of system
-        // resources, and if left running, will cause your app to eat the user's battery up, and may cause
-        // your application to run slowly. To do this, use DiscoveryAgent#stopDiscovery().
-        _discoveryAgent.stopDiscovery();
-
-        // It is also proper form to not allow yourself to re-register for the discovery listeners, so let's
-        // unregister for the available notifications here using DiscoveryAgent#removeDiscoveryListener().
-        _discoveryAgent.removeDiscoveryListener(_discoveryAgentEventListener);
-        _discoveryAgent.removeRobotStateListener(_robotStateListener);
-        _discoveryAgent = null;
-    }
-
-    @Override
-    public void handleResponse(DeviceResponse deviceResponse, Robot robot) {
-
-    }
-
-    @Override
-    public void handleStringResponse(String s, Robot robot) {
-
-    }
-
-    @Override
-    public void handleAsyncMessage(AsyncMessage asyncMessage, Robot robot) {
-
-    }
-
-    @Override
-    public void onClick(View v) {
-        if (_robot == null)
-            return;
-
-        switch (v.getId()) {
-
-
-            /*case R.id.procedimiento1: {
-                eventos.setText("Giro Loco Loco");
-                    _robot.drive(45, 0);
-                    android.os.SystemClock.sleep(75);
-                    _robot.drive(90, 0);
-                    android.os.SystemClock.sleep(75);
-                    _robot.drive(135, 0);
-                    android.os.SystemClock.sleep(75);
-                    _robot.drive(180, 0);
-                    android.os.SystemClock.sleep(75);
-                    _robot.drive(225, 0);
-                    android.os.SystemClock.sleep(75);
-                    _robot.drive(270, 0);
-                    android.os.SystemClock.sleep(75);
-                    _robot.drive(324, 0);
-                    android.os.SystemClock.sleep(75);
-                    _robot.drive(360, 0);
-                    android.os.SystemClock.sleep(75);
-                    //_robot.drive(0, 0);
-                    //android.os.SystemClock.sleep(75);
-                   // _robot.drive(360, 0);
-                    //android.os.SystemClock.sleep(75);
-
-
-                break;
-            }
-            case R.id.procedimiento2: {
-                eventos.setText("Giro Loco Loco 2");
-                _robot.enableStabilization(false);
-                _robot.addResponseListener(this);
-
-                for (int i=0;i<15;i++) {
-                    _robot.drive(45, 0.0000f);
-                    android.os.SystemClock.sleep(75);
-                    _robot.drive(90, 0.0000f);
-                    android.os.SystemClock.sleep(75);
-                    _robot.drive(135, 0.0000f);
-                    android.os.SystemClock.sleep(75);
-                    _robot.drive(180, 0.0000f);
-                    android.os.SystemClock.sleep(75);
-                    _robot.drive(225, 0.0000f);
-                    android.os.SystemClock.sleep(75);
-                    _robot.drive(270, 0.0000f);
-                    android.os.SystemClock.sleep(75);
-                    _robot.drive(324, 0.0000f);
-                    android.os.SystemClock.sleep(75);
-                    _robot.drive(360, 0.0000f);
-                    android.os.SystemClock.sleep(75);
-
-                }
-                break;
-            }
-            case R.id.procedimiento3:
-                eventos.setText("AVANCE INFINITO!");
-                for(int i=0;i<20;i++){
-                    _robot.drive(0, 0.6f);
-                    android.os.SystemClock.sleep(75);
-                }
-                break;
-            case R.id.procedimiento4:
-                eventos.setText("HALT!");
-                //_robot.drive(180, 0.6f);
-                android.os.SystemClock.sleep(35);
-                for(int i=0;i<20;i++){
-                    _robot.drive(180, 0.6f);
-                    android.os.SystemClock.sleep(75);
-                }
-                break;
-
-            case R.id.detener:
-                eventos.setText("HALT!");
-                _robot.drive(360, 0);
-                break;*/
-        }
-    }
-
-
-    @Override
-    public void handleRobotChangedState(Robot robot, RobotChangedStateNotificationType robotChangedStateNotificationType) {
-
-    }
 }

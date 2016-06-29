@@ -54,18 +54,6 @@ public class BluetoothActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
-
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-
-    }
-
-    @Override
     protected void onResume() {
         super.onResume();
 
