@@ -1,51 +1,30 @@
 package com.example.mpv.bb8;
 
 import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v7.app.AlertDialog;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.orbotix.ConvenienceRobot;
-import com.orbotix.Sphero;
 import com.orbotix.async.CollisionDetectedAsyncData;
 import com.orbotix.calibration.api.CalibrationEventListener;
 import com.orbotix.calibration.api.CalibrationImageButtonView;
 import com.orbotix.calibration.api.CalibrationView;
-import com.orbotix.common.DiscoveryAgentEventListener;
-import com.orbotix.common.DiscoveryException;
 import com.orbotix.common.ResponseListener;
 import com.orbotix.common.Robot;
-import com.orbotix.common.RobotChangedStateListener;
 import com.orbotix.common.internal.AsyncMessage;
 import com.orbotix.common.internal.DeviceResponse;
 import com.orbotix.joystick.api.JoystickEventListener;
 import com.orbotix.joystick.api.JoystickView;
-import com.orbotix.le.DiscoveryAgentLE;
-import com.orbotix.le.RobotRadioDescriptor;
 
-import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends Activity {
 
-    private Handler mHandler = new Handler();
-
-    private static final String TAG = "MainActivity";
-
-
-    // Our current discovery agent that we will use to find BB8s
-    private DiscoveryAgentLE _discoveryAgent;
-
-    // The connected robot
-    private ConvenienceRobot _robot;
+    private Timer updateTimer;
 
     // The joystick that we will use to send roll commands to the robot
     private JoystickView _joystick;
@@ -56,28 +35,69 @@ public class MainActivity extends Activity {
     //A button used for one finger calibration
     private CalibrationImageButtonView _calibrationButtonView;
 
-    private TextView events;
+    private TextView life;
     private TextView score;
 
     private long startGameTime;
     private long endGameTime;
-
-
-    private int life;
-
-    private static final float ROBOT_VELOCITY = 0.6f;
+    private int scoreCounter;
+    private int lifeCounter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        life = 100;
 
-        events = (TextView) findViewById(R.id.events);
-        events = (TextView) findViewById(R.id.score);
-        events.setText(Integer.toString(life));
+        updateTimer = new Timer();
+        lifeCounter = 100;
+        scoreCounter = 0;
+
+        life = (TextView) findViewById(R.id.life);
+        score = (TextView) findViewById(R.id.score);
+        life.setText("Life: " + String.valueOf(lifeCounter));
+        score.setText("Score: " + String.valueOf(score));
 
         Game();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        updateTimer.schedule(new UpdateTask(new Handler(), this), 0, 1000);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        updateTimer.purge();
+    }
+
+    private void update(){
+        endGameTime = System.currentTimeMillis() - startGameTime;
+        scoreCounter = (int) (endGameTime / 1000);
+
+        score.setText("Score: " + String.valueOf(scoreCounter));
+    }
+
+    private class UpdateTask extends TimerTask {
+        Handler handler;
+        MainActivity ref;
+
+        public UpdateTask(Handler handler, MainActivity ref){
+            super();
+            this.handler = handler;
+            this.ref = ref;
+        }
+
+        @Override
+        public void run() {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    ref.update();
+                }
+            });
+        }
     }
 
     /**
@@ -104,7 +124,7 @@ public class MainActivity extends Activity {
         // Get a reference to the joystick view so that we can use it to send roll commands
         _joystick = (JoystickView) findViewById(R.id.joystickView);
 
-        // In order to get the events from the joystick, you need to implement the JoystickEventListener interface
+        // In order to get the life from the joystick, you need to implement the JoystickEventListener interface
         // (or declare it anonymously) and set the listener.
         _joystick.setJoystickEventListener(new JoystickEventListener() {
             /**
@@ -151,7 +171,7 @@ public class MainActivity extends Activity {
         _calibrationView = (CalibrationView)findViewById(R.id.calibrationView);
         // Set the glow. You might want to not turn this on if you're using any intense graphical elements.
         _calibrationView.setShowGlow(true);
-        // Register anonymously for the calibration events here. You could also have this class implement the interface
+        // Register anonymously for the calibration life here. You could also have this class implement the interface
         // manually if you plan to do more with the callbacks.
         _calibrationView.setCalibrationEventListener(new CalibrationEventListener() {
             /**
@@ -161,7 +181,6 @@ public class MainActivity extends Activity {
             public void onCalibrationBegan() {
                 // The easy way to set up the robot for calibration is to use ConvenienceRobot#calibrating(true)
                 if(BB8ConnectionActivity.getRobot() != null){
-                    Log.v(TAG, "Calibration began!");
                     BB8ConnectionActivity.getRobot().calibrating(true);
                 }
             }
@@ -206,7 +225,7 @@ public class MainActivity extends Activity {
         setupJoystick();
         setupCalibration();
 
-        // Here, you need to route all the touch events to the joystick and calibration view so that they know about
+        // Here, you need to route all the touch life to the joystick and calibration view so that they know about
         // them. To do this, you need a way to reference the view (in this case, the id "entire_view") and attach
         // an onTouchListener which in this case is declared anonymously and invokes the
         // Controller#interpretMotionEvent() method on the joystick and the calibration view.
@@ -261,10 +280,10 @@ public class MainActivity extends Activity {
                     float collisionSpeed = ((CollisionDetectedAsyncData) asyncMessage).getImpactSpeed();
                     float c = (collisionSpeed * 10);
 
-                    life = life - Math.round(c);
-                    if (life < 0)
-                        life = 0;
-                    events.setText(String.valueOf(life));
+                    lifeCounter = lifeCounter - Math.round(c);
+                    if (lifeCounter < 0)
+                        lifeCounter = 0;
+                    life.setText("Life: " + String.valueOf(lifeCounter));
 
                     checkIfGameOver();
                 }
@@ -273,12 +292,12 @@ public class MainActivity extends Activity {
     }
 
     private void checkIfGameOver(){
-        if(life == 0){
+        if(lifeCounter == 0){
             endGameTime = System.currentTimeMillis() - startGameTime;
-            int sec = (int) (endGameTime / 1000);
+            scoreCounter = (int) (endGameTime / 1000);
 
             Intent gameOverIntent = new Intent(MainActivity.this, GameOverActivity.class);
-            gameOverIntent.putExtra("score", sec);
+            gameOverIntent.putExtra("score", scoreCounter);
             startActivity(gameOverIntent);
         }
     }
