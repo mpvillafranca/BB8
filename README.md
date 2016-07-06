@@ -10,10 +10,10 @@ Features:
 * [X] Joystick to drive the BB8
 * [X] Calibration wheel to match BB8 orientation with the joystick controls
 * [X] Collision detection
-* [ ] Elapsed game time like a score system
+* [X] Elapsed game time like a score system
 
 Notes:
 - This project is under **[Apache License 2.0](./LICENSE)**
 - Builded with Android Studio 2.2
 - Gradle version 2.1.0
-- minSdkVersion: 15
+- minSdkVersion: 17
